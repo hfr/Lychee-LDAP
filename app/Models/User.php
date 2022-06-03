@@ -26,6 +26,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon                                                $created_at
  * @property Carbon                                                $updated_at
  * @property string                                                $username
+ * @property string                                                $display_name
  * @property string|null                                           $password
  * @property string|null                                           $email
  * @property bool                                                  $may_upload
@@ -53,6 +54,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
 		'username',
 		'password',
 		'email',
+		'display_name',
 	];
 
 	/**
@@ -123,6 +125,40 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
 	public function name(): string
 	{
 		return ($this->id == 0) ? 'Admin' : $this->username;
+	}
+
+	/**
+	 * Accessor for `display_name` property.
+	 *
+	 * @param ?string $value the raw value from the database passed in by
+	 *                       the Eloquent framework
+	 *
+	 * @return string the display name
+	 */
+	public function getDisplayNameAttribute(?string $value): string
+	{
+		if (empty($value) || (Configs::get_value('ldap_enabled', '0') == 0)) {
+			return $this->name();
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Accessor for `is_locked` property.
+	 *
+	 * The `is_locked` attribute determines whether users may change their
+	 * passwords.
+	 *
+	 * @param bool $value the raw value from the database passed in by
+	 *                    the Eloquent framework
+	 *
+	 * @return bool the effective value of the `is_locked` attribute
+	 */
+	public function getIsLockedAttribute(bool $value): bool
+	{
+		// If LDAP is enabled, every user is locked
+		return $value || Configs::get_value('ldap_enabled', '0');
 	}
 
 	/**

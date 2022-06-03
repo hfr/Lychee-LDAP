@@ -2,16 +2,26 @@
 
 namespace App\ModelFunctions;
 
+use App\Contracts\LycheeException;
+use App\Exceptions\Internal\FrameworkException;
 use App\Exceptions\UnauthenticatedException;
+use App\LDAP\FixedArray;
+use App\LDAP\LDAPActions;
+use App\LDAP\LDAPFunctions;
 use App\Legacy\Legacy;
+use App\Models\Configs;
 use App\Models\Logs;
 use App\Models\User;
+use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 
 class SessionFunctions
 {
 	public ?User $user_data = null;
+
+	/* ldap server access */
+	protected ?LDAPFunctions $ldap = null;
 
 	public function log_as_id($id): void
 	{
@@ -61,8 +71,13 @@ class SessionFunctions
 		if (!Session::get('login')) {
 			throw new UnauthenticatedException();
 		}
+		$uid = Session::get('UserID');
+		if (is_null($uid)) {
+			$this->logout();
+			throw new UnauthenticatedException();
+		}
 
-		return Session::get('UserID');
+		return $uid;
 	}
 
 	/**
@@ -140,9 +155,15 @@ class SessionFunctions
 	 * @param string $ip
 	 *
 	 * @return bool
+	 *
+	 * @throws LycheeException
 	 */
 	public function log_as_user(string $username, string $password, string $ip): bool
 	{
+		if (Configs::get_value('ldap_enabled', '0')) {
+			return $this->log_with_ldap($username, $password, $ip);
+		}
+
 		// We select the NON ADMIN user
 		/** @var User $user */
 		$user = User::query()->where('username', '=', $username)->where('id', '>', '0')->first();
@@ -157,6 +178,69 @@ class SessionFunctions
 		}
 
 		return false;
+	}
+
+	/**
+	 * Given a username and Password authenticate against LDAP.
+	 *
+	 * @param string $username
+	 * @param string $password
+	 * @param string $ip
+	 *
+	 * @return bool
+	 *
+	 * @throws LycheeException
+	 */
+	public function log_with_ldap(string $username, string $password, string $ip): bool
+	{
+		try {
+			if (empty($this->ldap)) {
+				$this->ldap = new LDAPFunctions();
+			}
+
+			$valid = $this->ldap->check_pass($username, $password);
+			if (!$valid) {
+				return false;
+			}
+
+			/** @var FixedArray $ldapUserData */
+			$ldapUserData = $this->ldap->get_user_data($username);
+			if ($ldapUserData == null) {
+				// Should never happen if the ldap server is functioning correctly
+				// @codeCoverageIgnoreStart
+				return false;
+				// @codeCoverageIgnoreEnd
+			}
+			/** @var User $user */
+			$user = User::query()->where('username', '=', $username)->first();
+			if ($user == null) {
+				LDAPActions::create_user_not_exist($username, $ldapUserData);
+				$user = User::query()->where('username', '=', $username)->first();
+			}
+			if ($user !== null) {
+				// admin user cannot be used with LDAP
+				if ($user->id == 0) {
+					return false;
+				}
+				$this->user_data = $user;
+				Session::put('login', true);
+				Session::put('UserID', $user->id);
+				LDAPActions::update_user($username, $ldapUserData);
+
+				Logs::notice(__METHOD__, __LINE__, sprintf('User (%s) has logged in from %s', $username, $ip));
+
+				return true;
+			}
+			// Can only happen if the user cannot be created in the database
+			// @codeCoverageIgnoreStart
+			return false;
+			// @codeCoverageIgnoreEnd
+		}
+		// @codeCoverageIgnoreStart
+		catch (BindingResolutionException $e) {
+			throw new FrameworkException('Laravel\'s container component', $e);
+			// @codeCoverageIgnoreEnd
+		}
 	}
 
 	/**

@@ -16,11 +16,13 @@
 [![Docker repository][docker-shield]](https://github.com/LycheeOrg/Lychee-Docker)
 [![Gitter][gitter-shield]](https://gitter.im/LycheeOrg/Lobby)
 
+# Lychee-LDAP
 
-#### A great looking and easy-to-use photo-management-system.
+#### A great looking and easy-to-use photo-management-system with LDAP support
 
-*The Lychee project was moved to [LycheeOrg](https://github.com/LycheeOrg) on the 1st of April 2018. We would like to thank electerious (Tobias Reich) for creating Lychee and for giving us the opportunity to make this project live on.*
+This is a version of Lychee which manages the users using a LDAP server. For Details of the LDAP configuration see: [LDAP readme](https://github.com/hfr/Lychee-LDAP/blob/LDAP/app/LDAP/readme.md)
 
+*This version of Lychee was created when the maintainer of Lychee refused to integrate the LDAP authentication support in the master branch for personal reasons.*
 
 Upgrade from v3 is straight forward. [Upgrade. &#187;](https://lycheeorg.github.io/docs/upgrade.html)
 
