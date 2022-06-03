@@ -1,5 +1,7 @@
 /node_modules
 
+public/test-output.html
+
 public/Lychee-front/node_modules/
 public/Lychee-front/package-lock.json
 

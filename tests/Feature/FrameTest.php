@@ -24,7 +24,7 @@ class FrameTest extends TestCase
 
 		// set to 0
 		Configs::set('Mod_Frame', '0');
-		static::assertEquals('0', Configs::get_value('Mod_Frame'));
+		static::assertEquals(0, Configs::get_value('Mod_Frame'));
 
 		// check redirection
 		$response = $this->get('/frame');

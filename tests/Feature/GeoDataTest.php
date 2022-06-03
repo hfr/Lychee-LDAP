@@ -102,7 +102,7 @@ class GeoDataTest extends TestCase
 
 		// set to 0
 		Configs::set('map_display', '0');
-		static::assertEquals('0', Configs::get_value('map_display'));
+		static::assertEquals(0, Configs::get_value('map_display'));
 		$albums_tests->AlbumsGetPositionDataFull(); // we need to fix this
 
 		// set to 1
@@ -116,12 +116,12 @@ class GeoDataTest extends TestCase
 
 		// set to 0
 		Configs::set('map_display', '0');
-		static::assertEquals('0', Configs::get_value('map_display'));
+		static::assertEquals(0, Configs::get_value('map_display'));
 		$albums_tests->AlbumGetPositionDataFull($albumID); // we need to fix this
 
 		// set to 1
 		Configs::set('map_display', '1');
-		static::assertEquals('1', Configs::get_value('map_display'));
+		static::assertEquals(1, Configs::get_value('map_display'));
 		$response = $albums_tests->AlbumGetPositionDataFull($albumID);
 		$responseObj = json_decode($response->getContent());
 		static::assertObjectHasAttribute('photos', $responseObj);

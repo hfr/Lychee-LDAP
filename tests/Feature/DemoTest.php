@@ -28,7 +28,7 @@ class DemoTest extends TestCase
 
 		// set to 0
 		Configs::set('gen_demo_js', '0');
-		static::assertEquals('0', Configs::get_value('gen_demo_js'));
+		static::assertEquals(0, Configs::get_value('gen_demo_js'));
 
 		// check redirection
 		$response = $this->get('/demo');

@@ -2,6 +2,7 @@
 
 namespace App\Console;
 
+use App\Models\Configs;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -29,6 +30,11 @@ class Kernel extends ConsoleKernel
 	protected function schedule(Schedule $schedule)
 	{
 		$schedule->command('lychee:photos_added_notification')->weekly();
+
+		$ldap_update = Configs::get_value_as_cron_spec('ldap_update_users');
+		if ($ldap_update != '') {
+			$schedule->command('lychee:LDAP_update_all_users')->cron($ldap_update);
+		}
 	}
 
 	/**
