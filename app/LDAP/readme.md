@@ -8,7 +8,7 @@ To use the the LDAP functionality it needs to enabled after installation.
 Follow the standard method to install lychee (see [Installation](https://lycheeorg.github.io/docs/installation.html)). Once lychee is running it 
 can be configured via the settings dialog, which is available for the admin user.
 
-*Warning: After intsallation a puplic LDAP test-server is configured but not enabled. It can be enabled to test the installation but it should be changed aft tests are complete.*
+*Warning: After intsallation a puplic LDAP test-server is configured but not enabled. It can be enabled to test the installation but it should be changed after all tests are complete.*
 
 ### Configuration
 
