@@ -103,9 +103,9 @@ The LDAP for lychee interface provides the following public functions.
 If the user types in his credentials lychee calls `check_pass()`. The function connects with the LDAP server and 
 checks if the user has an account. If an
 account could be found and the password could be verified, `get_user_data()` gets called to read the common name 
-an the email address will be requested from the 
+and the email address will be requested from the 
 LDAP server and stored in the lychee users table. An entry will be created in this table if no entry with this 
-username exists. The user can then use lychee.
+username exists yet. The user can then use lychee.
 
 After logout the user data is kept in the users table of the lychee database as long as the user has 
 an account with the LDAP server.
