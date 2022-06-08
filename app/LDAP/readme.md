@@ -138,7 +138,7 @@ while true; do
 done
 ```
 
-This script need to be started when the LDAP server is started and will then loop forever. If systemd is used on the LDAP server a service to start the script can be configured with the following configuration in ``/etc/systemd/system/lychee-update.service``:
+This script needs to be run when the LDAP server is started and it will then loop forever. If systemd is used on the LDAP server a service to start the script can be configured with the following configuration in ``/etc/systemd/system/lychee-update.service``:
 
 ```
 [Unit]
@@ -157,7 +157,7 @@ RestartSec=2
 WantedBy=multi-user.target
 ```
 
-The service need to be started and installed using the following commands:
+The service needs to be started and installed using the following commands:
 
 ```
 sudo systemctl start lychee-update.service
