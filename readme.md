@@ -20,7 +20,7 @@
 
 #### A great looking and easy-to-use photo-management-system with LDAP support
 
-This is a version of Lychee which manages the users using a LDAP server. For Details of the LDAP configuration see: [LDAP readme](https://github.com/hfr/Lychee-LDAP/blob/LDAP/app/LDAP/readme.md)
+This is a version of Lychee which manages the users using a LDAP server. For Details of the LDAP configuration see: [LDAP readme](https://github.com/hfr/Lychee-LDAP/blob/main/app/LDAP/readme.md)
 
 *This version of Lychee was created when the maintainer of Lychee refused to integrate the LDAP authentication support in the master branch for personal reasons.*
 
