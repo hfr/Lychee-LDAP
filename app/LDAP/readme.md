@@ -65,6 +65,23 @@ In ldap_upload_filter a filter for selecting lychee users which are allowed to u
 | ldap_purge        | LDAP enables purging of obsolete users in lychee              | 0/1        | 0                             |
 | ldap_update_users | LDAP schedule interval for automatic sync of users in minutes | int        | 0                             |
 
+### Testing the LDAP Interface for Lychee
+
+The LDAP interface for lychee can be tested using the public LDAP server from [Forum Systems](https://www.forumsys.com/2022/05/10/online-ldap-test-server/) 
+with the follwing configuration:
+
+| Setting           | Description                                                   | Value                                |
+|-------------------|---------------------------------------------------------------|--------------------------------------|
+| ldap_enabled      | LDAP login provider enabled                                   | 1                                    |
+| ldap_server       | LDAP server name                                              | ldap.forumsys.com                    |
+| ldap_port         | LDAP server port                                              | 389                                  |
+| ldap_user_tree    | LDAP user tree                                                | dc=example,dc=com                    |
+| ldap_user_filter  | LDAP user filter                                              | (uid=%{user})                        |
+| ldap_bind_dn      | LDAP bind dn                                                  | cn=read-only-admin,dc=example,dc=com |
+| ldap_bind_pw      | LDAP bind password                                            | password                             |
+
+Valid usernames and passwords for this server are: riemann:password, gauss:password, euler:password, euclid:password.
+
 ### Synchronizing Lychee with the LDAP Server
 
 Lychee always relies on the LDAP server for the decission if a user can login to lychee or not. So only users which can be validated against the LADP server can login.
@@ -85,32 +102,87 @@ The frequency to run the snchonization between lyche and the LADP server can be 
 the entry `ldap_update_users`. A typical value for the update frequency is 5 minutes. Then this value needs to be set to 5. The default value of zero
 switches the automatic update off. If `ldap_enable = 1` the synchronisation can be performed by executing the `php artisan lychee:LDAP_update_all_users` command.
 
-### Synchronizing Lychee by monitoring the LDAP database
+### Synchronizing Lychee by Monitoring the LDAP Database
 
-If the content of the LDAP server changes the LDAP database file will be changed. By monitoring the database file the LDAP_update_all_users can be initiated. On Debian based systems you can run the following command on the LDAP server to find the the directory where the LDAP database is stored: 
+For the synchronization of the lychee users table the script ``/usr/local/sbin/update-lychee`` might be used:
+
+```
+#!/bin/bash
+#
+LYCHEE_USER="www-data"
+
+LDAP_UPDATE='/usr/bin/php $HOME/Lychee-LDAP-dev/artisan lychee:LDAP_update_all_users'
+
+if [ "$USER" == "$LYCHEE_USER" ]; then 
+  /bin/sh -c '/usr/bin/php $HOME/Lychee-LDAP-dev/artisan lychee:LDAP_update_all_users'
+else
+  /usr/bin/su www-data -s /bin/sh -c '/usr/bin/php $HOME/Lychee-LDAP-dev/artisan lychee:LDAP_update_all_users'
+fi
+```
+The script ensures that artisan is run as ``LYCHEE_USER``.
+
+If the content of the LDAP server has changed the LDAP database file will be changed, too. By monitoring the database file a call of ``LDAP_update_all_users`` can be initiated. On Debian based systems you can run the following command on the LDAP server to find the the directory where the LDAP database is stored:
 
 ```
 sudo ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b cn=config | grep 'olcDbDirectory:'
 ```
 
-Usually this directory is ``/var/lib/ldap``.
- 
-### Testing the LDAP Interface for Lychee
+Usually this directory is ``/var/lib/ldap``. The database file (usually ``data.mdb``) in this directory can be monitored using the following  script in ``/usr/local/sbin/ldap-auto-lychee``:
 
-The LDAP interface for lychee can be tested using the public LDAP server from [Forum Systems](https://www.forumsys.com/2022/05/10/online-ldap-test-server/) 
-with the follwing configuration:
+```
+#!/bin/bash
+#
+while true; do
+  /usr/bin/inotifywait -e modify /var/lib/ldap/data.mdb
+  /usr/local/sbin/update-lychee 
+done
+```
 
-| Setting           | Description                                                   | Value                                |
-|-------------------|---------------------------------------------------------------|--------------------------------------|
-| ldap_enabled      | LDAP login provider enabled                                   | 1                                    |
-| ldap_server       | LDAP server name                                              | ldap.forumsys.com                    |
-| ldap_port         | LDAP server port                                              | 389                                  |
-| ldap_user_tree    | LDAP user tree                                                | dc=example,dc=com                    |
-| ldap_user_filter  | LDAP user filter                                              | (uid=%{user})                        |
-| ldap_bind_dn      | LDAP bind dn                                                  | cn=read-only-admin,dc=example,dc=com |
-| ldap_bind_pw      | LDAP bind password                                            | password                             |
+This script need to be started when the LDAP server is started and will then loop forever. If systemd is used on the LDAP server a service to start the script can be configured with the following configuration in ``/etc/systemd/system/lychee-update.service``:
 
-Valid usernames and passwords for this server are: riemann:password, gauss:password, euler:password, euclid:password.
+```
+[Unit]
+Description="Automatic Lychee artisan execution after ldap database change"
+Requires=slapd.service
+After=slapd.service
+
+[Service]
+User=root
+ExecStart=/usr/local/sbin/ldap-auto-lychee
+ExecStop=/usr/bin/killall ldap-auto-lychee
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+```
+
+The service need to be started and installed using the following commands:
+
+```
+sudo systemctl start lychee-update.service
+sudo systemctl enable lychee-update.service
+```
+
+In addition the following crontab entry might be used to force an update of the lychee users table at least once a day:
+
+```
+0 0 * * * /usr/sbin/service lychee-update stop && /usr/local/sbin/update-lychee && /usr/sbin/service lychee-update start
+```
+
+The ``lychee-update`` service needs to run either as root or as ``LYCHEE_USER``.
+
+### Monitoring the LDAP Database on a remote server
+
+If the LDAP server is not running on the same server as lychee then the LDAP database file cannot be monitored directly. But it is still possible to monitor the database file on the server where the LDAP database is located. The monitoring service and the scripts to monitor the LDAP server need to be installed on the remote LDAP server. The script ``/usr/local/sbin/update-lychee`` on the remote LDAP server needs to be modified because the remote server cannot call lychee artisan directly. Different communication methods between the systems could be used to allow the remote server to start the artisan command on the lychee server. The following script uses ssh to allow remote access of the LDAP server to the lychee server and replaces ``/usr/local/sbin/update-lychee`` on the LDAP server:
+
+```
+#!/bin/bash
+#
+/usr/bin/ssh lychee /usr/local/sbin/update-lychee
+```
+
+This requires that a ssh configuration on the LDAP server for lychee exists, allowing a public key login on the lychee server for the user running the monitoring service. In addition the script ``/usr/local/sbin/update-lychee`` from above needs to be installed on the lychee server.
 
 ### Therory of Operation
 
