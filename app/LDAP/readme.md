@@ -100,7 +100,7 @@ The synchronization can be automated, by configuring a cron-job to execute `/pat
 
 The frequency to run the snchonization between lyche and the LADP server can be controlled in the administration settings with 
 the entry `ldap_update_users`. A typical value for the update frequency is 5 minutes. Then this value needs to be set to 5. The default value of zero
-switches the automatic update off. If `ldap_enable = 1` the synchronisation can be performed by executing the `php artisan lychee:LDAP_update_all_users` command.
+switches the automatic update off. If `ldap_enable = 1` the synchronisation can be performed any time by executing the `php artisan lychee:LDAP_update_all_users` command.
 
 ### Synchronizing Lychee by Monitoring the LDAP Database
 
