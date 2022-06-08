@@ -84,6 +84,16 @@ The synchronization can be automated, by configuring a cron-job to execute `/pat
 The frequency to run the snchonization between lyche and the LADP server can be controlled in the administration settings with 
 the entry `ldap_update_users`. A typical value for the update frequency is 5 minutes. Then this value needs to be set to 5. The default value of zero
 switches the automatic update off. If `ldap_enable = 1` the synchronisation can be performed by executing the `php artisan lychee:LDAP_update_all_users` command.
+
+### Synchronizing Lychee by monitoring the LDAP database
+
+If the content of the LDAP server changes the LDAP database file will be changed. By monitoring the database file the LDAP_update_all_users can be initiated. On Debian based systems you can run the following command on the LDAP server to find the the directory where the LDAP database is stored: 
+
+```
+sudo ldapsearch -Q -LLL -Y EXTERNAL -H ldapi:/// -b cn=config | grep 'olcDbDirectory:'
+```
+
+Usually this directory is ``/var/lib/ldap``.
  
 ### Testing the LDAP Interface for Lychee
 
@@ -101,7 +111,6 @@ with the follwing configuration:
 | ldap_bind_pw      | LDAP bind password                                            | password                             |
 
 Valid usernames and passwords for this server are: riemann:password, gauss:password, euler:password, euclid:password.
-
 
 ### Therory of Operation
 
