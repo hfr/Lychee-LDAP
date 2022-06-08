@@ -12,7 +12,7 @@ class LDAPFunctions
 	public const SCOPE_BASE = 'base';
 	public const SCOPE_ONE = 'one';
 	public const SCOPE_SUB = 'sub';
-	public const USER_ENTRIES = ['user', 'server', 'dn', 'display_name', 'email'];
+	public const USER_ENTRIES = ['user', 'server', 'dn', 'display_name', 'email', 'may_upload'];
 	protected const CONFIG_KEY_BIND_DN = 'ldap_bind_dn';
 	protected const CONFIG_KEY_BIND_PW = 'ldap_bind_pw';
 	protected const CONFIG_KEY_CN = 'ldap_cn';
@@ -28,6 +28,7 @@ class LDAPFunctions
 	protected const CONFIG_KEY_USER_SCOPE = 'ldap_user_scope';
 	protected const CONFIG_KEY_VERSION = 'ldap_version';
 	protected const CONFIG_KEY_TIMEOUT = 'ldap_timeout';
+	protected const CONFIG_KEY_UPLOAD_FILTER = 'ldap_upload_filter';
 	protected const BIND_TYPE_UNBOUND = -1;
 	protected const BIND_TYPE_ANONYMOUS = 0;
 	protected const BIND_TYPE_USER = 1;
@@ -40,6 +41,11 @@ class LDAPFunctions
 	 * @var \LDAP\Connection|resource|null the LDAP connection
 	 */
 	protected $con = null;
+
+	/**
+	 * @var int reference count for open/close
+	 */
+	protected $open_ref_count = 0;
 
 	/**
 	 * @var string|null used server name
@@ -131,42 +137,57 @@ class LDAPFunctions
 	 */
 	public function get_user_data(string $username): ?FixedArray
 	{
-		$this->open_LDAP();
-
 		if (!empty($this->cached_user_info) && array_key_exists($username, $this->cached_user_info)) {
 			Logs::notice(__METHOD__, __LINE__, sprintf('getUserData: Use cached info for %s', $username));
 
 			return $this->cached_user_info[$username];
 		}
 
-		// get info for given user
-		$user = ['user' => $username, 'server' => $this->ldap_server];
-		$base = self::make_filter(Configs::get_value(self::CONFIG_KEY_USER_TREE), $user);
-		Logs::notice(__METHOD__, __LINE__, sprintf('base filter: %s', $base));
+		$this->open_LDAP();
+		try {
+			// get info for given user
+			$user = ['user' => $username, 'server' => $this->ldap_server];
+			$base = self::make_filter(Configs::get_value(self::CONFIG_KEY_USER_TREE), $user);
+			Logs::notice(__METHOD__, __LINE__, sprintf('base filter: %s', $base));
 
-		if (Configs::get_value(self::CONFIG_KEY_USER_FILTER)) {
-			$filter = self::make_filter(Configs::get_value(self::CONFIG_KEY_USER_FILTER), $user);
-		} else {
-			$filter = '(ObjectClass=*)';
+			if (Configs::get_value(self::CONFIG_KEY_USER_FILTER)) {
+				$filter = self::make_filter(Configs::get_value(self::CONFIG_KEY_USER_FILTER), $user);
+			} else {
+				$filter = '(ObjectClass=*)';
+			}
+			Logs::notice(__METHOD__, __LINE__, sprintf('filter: %s', $filter));
+
+			$result = $this->LDAP_search($base, $filter, Configs::get_value(self::CONFIG_KEY_USER_SCOPE));
+
+			// Only accept one response
+			if ($result['count'] == 0) {
+				return null;
+			} elseif ($result['count'] > 1) {
+				throw new LDAPException(sprintf('LDAP search returned %d results while it should return 1!', $result['count']));
+			}
+
+			$userData = $this->userdata_from_ldap_result($result[0]);
+			$userData->user = $username;
+
+			if (Configs::get_value(self::CONFIG_KEY_UPLOAD_FILTER)) {
+				$uploadfilter = self::make_filter(Configs::get_value(self::CONFIG_KEY_UPLOAD_FILTER), $user);
+				Logs::notice(__METHOD__, __LINE__, sprintf('uploadfilter: %s', $uploadfilter));
+				$result = $this->LDAP_search($base, $uploadfilter, Configs::get_value(self::CONFIG_KEY_USER_SCOPE));
+				if ($result['count'] > 0) {
+					$userData->may_upload = true;
+					Logs::notice(__METHOD__, __LINE__, 'may_uploadfilter: true');
+				} else {
+					$userData->may_upload = false;
+				}
+			}
+
+			// cache the info for future use
+			$this->cached_user_info[$username] = $userData;
+
+			return $userData;
+		} finally {
+			$this->close_LDAP();
 		}
-		Logs::notice(__METHOD__, __LINE__, sprintf('filter: %s', $filter));
-
-		$result = $this->LDAP_search($base, $filter, Configs::get_value(self::CONFIG_KEY_USER_SCOPE));
-
-		// Only accept one response
-		if ($result['count'] == 0) {
-			return null;
-		} elseif ($result['count'] > 1) {
-			throw new LDAPException(sprintf('LDAP search returned %d results while it should return 1!', $result['count']));
-		}
-
-		$userData = $this->userdata_from_ldap_result($result[0]);
-		$userData->user = $username;
-
-		// cache the info for future use
-		$this->cached_user_info[$username] = $userData;
-
-		return $userData;
 	}
 
 	/**
@@ -575,6 +596,7 @@ class LDAPFunctions
 	 */
 	protected function open_LDAP(): void
 	{
+		$this->open_ref_count++;
 		if ($this->con) {
 			return;
 		} // connection already established
@@ -664,11 +686,19 @@ class LDAPFunctions
 	 */
 	protected function close_LDAP(): void
 	{
+		if ($this->open_ref_count > 1) {
+			$this->open_ref_count--;
+
+			return;
+		}
 		if (!$this->con) {
+			$this->open_ref_count = 0;
+
 			return;
 		} // connection has not been established
 		Logs::debug(__METHOD__, __LINE__, 'close_LDAP()');
 		try {
+			$this->open_ref_count = 0;
 			ldap_close($this->con);
 			$this->con = null;
 			$this->bound = self::BIND_TYPE_UNBOUND;

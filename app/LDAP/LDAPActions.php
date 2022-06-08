@@ -24,17 +24,23 @@ class LDAPActions
 			Logs::debug(__METHOD__, __LINE__, 'Create User (not exist): ' . $username);
 			$create = resolve(Create::class);
 			// password is set to null for LDAP users
-			$create->do($username, null, false, true, $userData->email, $userData->display_name);
+			$create->do($username, null, false || $userData->may_upload, true, $userData->email, $userData->display_name);
 		}
 	}
 
 	public static function update_user(string $username, FixedArray $userData): void
 	{
 		$user = User::query()->where('username', '=', $username)->where('id', '>', '0')->first();
-		if (($user != null) && (($user->display_name != $userData->display_name) || ($user->email != $userData->email))) {
+		if (($user != null) &&
+				   (($user->display_name != $userData->display_name) || ($user->email != $userData->email)
+				   || ($user->may_upload != false || $userData->may_upload))) {
 			Logs::debug(__METHOD__, __LINE__, 'Update User: ' . $username);
 			$user->email = $userData->email;
 			$user->display_name = $userData->display_name;
+			$user->is_locked = true;
+			if (!is_null($userData->may_upload)) {
+				$user->may_upload = $userData->may_upload;
+			}
 			$user->save();
 		}
 	}

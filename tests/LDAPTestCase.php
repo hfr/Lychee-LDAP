@@ -58,6 +58,7 @@ class LDAPTestCase extends TestCase
 			'ldap_bind_dn' => self::BIND_DN,
 			'ldap_bind_pw' => self::BIND_PW,
 			'ldap_timeout' => '2',
+			'ldap_upload_filter' => '',
 		]);
 	}
 
