@@ -34,7 +34,7 @@ are available with the advanced settings.
 
 The LDAP login provider is only used if ldap_enabled is set to 1.
 
-In ldap_server the LDAP server name need to be set. For redundant installations a list of servers separated by comma can be used.
+In ldap_server the LDAP server name need to be set. For redundant installations a list of servers separated by comma might be used.
 
 The bind dn might should be set if the LDAP server does not support annonymous binding together with the password of the binding account.
 
