@@ -111,12 +111,12 @@ For the synchronization of the lychee users table the script ``/usr/local/sbin/u
 #
 LYCHEE_USER="www-data"
 
-LDAP_UPDATE='/usr/bin/php $HOME/Lychee-LDAP-dev/artisan lychee:LDAP_update_all_users'
+CMD='/usr/bin/php $HOME/Lychee-LDAP/artisan lychee:LDAP_update_all_users'
 
 if [ "$USER" == "$LYCHEE_USER" ]; then 
-  /bin/sh -c '/usr/bin/php $HOME/Lychee-LDAP-dev/artisan lychee:LDAP_update_all_users'
+  /bin/sh -c "$CMD"
 else
-  /usr/bin/su www-data -s /bin/sh -c '/usr/bin/php $HOME/Lychee-LDAP-dev/artisan lychee:LDAP_update_all_users'
+  /usr/bin/su www-data -s /bin/sh -c "$CMD"
 fi
 ```
 The script ensures that artisan is run as ``LYCHEE_USER``.
@@ -179,7 +179,15 @@ If the LDAP server is not running on the same server as lychee then the LDAP dat
 ```
 #!/bin/bash
 #
-/usr/bin/ssh lychee /usr/local/sbin/update-lychee
+LYCHEE_USER="www-data"
+
+CMD='/usr/bin/ssh lychee /usr/local/sbin/update-lychee'
+
+if [ "$USER" == "$LYCHEE_USER" ]; then 
+  /bin/sh -c "$CMD"
+else
+  /usr/bin/su www-data -s /bin/sh -c "$CMD"
+fi
 ```
 
 This requires that a ssh configuration on the LDAP server for lychee exists, allowing a public key login on the lychee server for the user running the monitoring service. In addition the script ``/usr/local/sbin/update-lychee`` from above needs to be installed on the lychee server.
