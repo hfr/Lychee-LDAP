@@ -36,13 +36,13 @@ The LDAP login provider is only used if ldap_enabled is set to 1.
 
 In ldap_server the LDAP server name need to be set. For redundant installations a list of servers separated by comma might be used.
 
-The bind dn might should be set if the LDAP server does not support annonymous binding together with the password of the binding account.
+The bind dn might be set if the LDAP server does not support annonymous binding together with the password of the binding account.
 
-In ldap_user_tree the base dn need to be set, where the users can be found. This dn is used in all LDAP searches.
+In ldap_user_tree the base dn needs to be set, where the user entries can be found. This dn is used in all LDAP searches.
 
-In ldap_user_filter the filter for selecting valid lychee users need to be set. %{user} will be replaced by the login name.
+In ldap_user_filter the filter for selecting valid lychee users need to be set. %{user} will be replaced by the login user name.
 
-In ldap_upload_filter a filter for selecting lychee users which are allowed to upload files to lychee. This option needs to be set if the option should be managed by the LDAP server. Usually the LDAP server manages this option by a group membership and then the a string to filter for this group membership need to be set in ldap_upload_filter.
+In ldap_upload_filter a filter for selecting lychee users might be configured which are allowed to upload files to lychee. This option needs to be set if this option should be managed by the LDAP server. Usually the LDAP server manages these options by a group membership and then a string to filter for this group membership need to be set in ldap_upload_filter.
 
 #### Advanced Settings
 
@@ -67,8 +67,7 @@ In ldap_upload_filter a filter for selecting lychee users which are allowed to u
 
 ### Testing the LDAP Interface for Lychee
 
-The LDAP interface for lychee can be tested using the public LDAP server from [Forum Systems](https://www.forumsys.com/2022/05/10/online-ldap-test-server/) 
-with the follwing configuration:
+The LDAP interface for lychee can be tested using the public LDAP server from [Forum Systems](https://www.forumsys.com/2022/05/10/online-ldap-test-server/) using the follwing configuration:
 
 | Setting           | Description                                                   | Value                                |
 |-------------------|---------------------------------------------------------------|--------------------------------------|
@@ -84,19 +83,20 @@ Valid usernames and passwords for this server are: riemann:password, gauss:passw
 
 ### Synchronizing Lychee with the LDAP Server
 
-Lychee always relies on the LDAP server for the decission if a user can login to lychee or not. So only users which can be validated against the LADP server can login.
+Lychee always relies on the LDAP server for the decission if a user can login to lychee or not. So only users which can be validated against the LADP server at the time of login can use lychee.
 
-In addition users can share pictures and albums between them and therefore the list of users needs to be kept up to date in lychee.
+In addition users might share pictures and albums between them and therefore a list of valid users needs to be kept up to date in the lychee users table.
 
-The LDAP interface for Lychee support the synchonization with the following command:
+The LDAP interface for Lychee supports the synchonization between the LDAP server und lychee by using the following command:
 
-`php artisan lychee:LDAP_update_all_users`
+```
+php artisan lychee:LDAP_update_all_users
+```
 
-By default obsolete users are purged from the list of lychee users. If the users should be kept in the database even if the 
-LDAP server do not know them any more, the following entry in the settings needs to be set to zero: `ldap_purge = 0`.
+By default obsolete users are purged from the list of lychee users. If the users should be kept in the lychee database even if the 
+LDAP server do not know them any more and therefore they cannot login, the following entry in the settings needs to be set to zero: `ldap_purge = 0`.
 
-The synchronization can be automated, by configuring a cron-job to execute `/path-to-php/php artisan schedule:run 2>&1 >/dev/null` every minute. Based on this
- lychee runs its own scheduler to execute its jobs.
+The synchronization can be automated, by configuring a cron-job to execute `/path-to-php/php artisan schedule:run 2>&1 >/dev/null` every minute. Based on this lychee runs its own scheduler to execute its jobs (see [setup cron](https://laravel.com/docs/9.x/scheduling#running-the-scheduler).
 
 The frequency to run the snchonization between lyche and the LADP server can be controlled in the administration settings with 
 the entry `ldap_update_users`. A typical value for the update frequency is 5 minutes. Then this value needs to be set to 5. The default value of zero
