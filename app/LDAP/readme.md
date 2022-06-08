@@ -12,7 +12,7 @@ can be configured via the settings dialog, which is available for the admin user
 
 ### Configuration
 
-To use LDAP as the login provider for lychee an LDAP server needs be configured in lychee. See section LDAP in the administrator settings.
+To use LDAP as the login provider for lychee an LDAP server needs be configured in lychee. See section LDAP in the administrator settings inside lychee.
 
 ### Settings
 
