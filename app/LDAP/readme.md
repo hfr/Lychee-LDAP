@@ -21,15 +21,28 @@ are available with the advanced settings.
 
 #### Basic Settings 
 
-| Setting           | Description                                                   | Type       | Default Value                 |
-|-------------------|---------------------------------------------------------------|:----------:|-------------------------------|
-| ldap_enabled      | LDAP login provider enabled                                   | 0/1        | 0                             |
-| ldap_server       | LDAP server name                                              | string     |                               |
-| ldap_port         | LDAP server port                                              | int        | 389                           |
-| ldap_bind_dn      | LDAP bind dn                                                  | string     |                               |
-| ldap_bind_pw      | LDAP bind password                                            | string     |                               |
-| ldap_user_tree    | LDAP user tree                                                | string     |                               |
-| ldap_user_filter  | LDAP user filter                                              | string     |                               |
+| Setting            | Description                                                   | Type       | Default Value                 |
+|--------------------|---------------------------------------------------------------|:----------:|-------------------------------|
+| ldap_enabled       | LDAP login provider enabled                                   | 0/1        | 0                             |
+| ldap_server        | LDAP server name                                              | string     |                               |
+| ldap_port          | LDAP server port                                              | int        | 389                           |
+| ldap_bind_dn       | LDAP bind dn                                                  | string     |                               |
+| ldap_bind_pw       | LDAP bind password                                            | string     |                               |
+| ldap_user_tree     | LDAP user tree                                                | string     |                               |
+| ldap_user_filter   | LDAP user filter                                              | string     | (uid=%{user})                 |
+| ldap_upload_filter | LDAP filter for the upload option                             | string     |                               |
+
+The LDAP login provider is only used if ldap_enabled is set to 1.
+
+In ldap_server the LDAP server name need to be set. For redundant installations a list of servers separated by comma can be used.
+
+The bind dn might should be set if the LDAP server does not support annonymous binding together with the password of the binding account.
+
+In ldap_user_tree the base dn need to be set, where the users can be found. This dn is used in all LDAP searches.
+
+In ldap_user_filter the filter for selecting valid lychee users need to be set. %{user} will be replaced by the login name.
+
+In ldap_upload_filter a filter for selecting lychee users which are allowed to upload files to lychee. This option needs to be set if the option should be managed by the LDAP server. Usually the LDAP server manages this option by a group membership and then the a string to filter for this group membership need to be set in ldap_upload_filter.
 
 #### Advanced Settings
 
@@ -43,7 +56,7 @@ are available with the advanced settings.
 | ldap_deref        | LDAP option deref                                             | 0/1        | 0                             |
 | ldap_cn           | LDAP common name                                              | string     | cn                            |
 | ldap_mail         | LDAP mail entry                                               | string     | mail                          |
-| ldap_timeout      | LDAP connect timeout                                          | int        | 1                          |
+| ldap_timeout      | LDAP connect timeout                                          | int        | 1                             |
 
 #### Database Update Settings
 
